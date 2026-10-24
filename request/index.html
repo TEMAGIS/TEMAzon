@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TEMAzon — Supply Request</title>
   <link rel="stylesheet" href="../shared/common.css" />
+  <style>/* Make the whole request page larger. 1.2 = 20% bigger; change to taste. */
+    html { zoom: 1.2; }</style>
 </head>
 <body class="app-request">
   <!-- Sign-in -->
@@ -94,5 +96,14 @@
   </main>
 
   <script type="module" src="app.js"></script>
+  <script>
+    // Tell the CSS how tall the sticky header is so the search row sits right under it.
+    (function () {
+      var h = document.querySelector(".topbar");
+      function set() { document.documentElement.style.setProperty("--topbar-h", h.offsetHeight + "px"); }
+      set(); window.addEventListener("resize", set);
+      if (window.ResizeObserver) new ResizeObserver(set).observe(h);
+    })();
+  </script>
 </body>
 </html>

@@ -267,3 +267,9 @@ table.grid { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 .stepper input[type="number"], input[data-qty] { -moz-appearance: textfield; appearance: textfield; }
 .stepper input[type="number"]::-webkit-outer-spin-button, .stepper input[type="number"]::-webkit-inner-spin-button,
 input[data-qty]::-webkit-outer-spin-button, input[data-qty]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Keep the header (and the search/filter row under it) visible while scrolling */
+.topbar { position: sticky; top: 0; z-index: 20; }
+.req-layout .catalog-tools { top: var(--topbar-h, 56px); z-index: 15; }
+.req-layout .cart { top: calc(var(--topbar-h, 56px) + 0.8rem); max-height: calc(100vh - var(--topbar-h, 56px) - 1.6rem); }
+@media (max-width: 860px) { .req-layout .cart { top: auto; max-height: none; } }
