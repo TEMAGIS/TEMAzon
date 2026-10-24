@@ -262,3 +262,8 @@ table.grid { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 .req-layout .cart textarea { min-height: 7rem; }
 .req-layout .cart .btn-primary { font-size: 1.1rem; padding: 0.8rem; }
 .req-layout .cart-summary { font-size: 1.05rem; }
+
+/* Hide the browser's up/down spinner on quantity boxes (use + / − or type) */
+.stepper input[type="number"], input[data-qty] { -moz-appearance: textfield; appearance: textfield; }
+.stepper input[type="number"]::-webkit-outer-spin-button, .stepper input[type="number"]::-webkit-inner-spin-button,
+input[data-qty]::-webkit-outer-spin-button, input[data-qty]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
