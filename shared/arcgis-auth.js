@@ -47,6 +47,12 @@ function loadStoredToken() {
     if (!raw) return null;
     const t = JSON.parse(raw);
     if (!t.accessToken || !t.expiresAt) return null;
+    // A token issued to a different OAuth app can't be refreshed with this app's
+    // client ID ("Invalid client_id"), so ignore it and make the person sign in again.
+    if (t.clientId !== CONFIG.ARCGIS_APP_ID) {
+      localStorage.removeItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
+      return null;
+    }
     return t;
   } catch {
     return null;
@@ -75,6 +81,7 @@ function tokenFromResponse(data) {
   const expSec = Number(data.expires_in) || 7200;
   const refSec = Number(data.refresh_token_expires_in) || 0;
   return {
+    clientId: CONFIG.ARCGIS_APP_ID,
     accessToken: data.access_token,
     refreshToken: data.refresh_token || (TOKEN && TOKEN.refreshToken) || null,
     expiresAt: now + expSec * 1000,
@@ -134,9 +141,16 @@ async function exchangeCodeForToken(code) {
   return tokenFromResponse(data);
 }
 
+/** Error that session.js treats as "sign in again" (code 498), never as "no access". */
+function sessionExpired(message) {
+  const e = new Error(message);
+  e.code = 498;
+  return e;
+}
+
 async function refreshAccessTokenNow() {
-  if (!TOKEN || !TOKEN.refreshToken) throw new Error("No refresh token available");
-  if (TOKEN.refreshExpiresAt && Date.now() > TOKEN.refreshExpiresAt) throw new Error("Refresh token expired");
+  if (!TOKEN || !TOKEN.refreshToken) throw sessionExpired("No refresh token available");
+  if (TOKEN.refreshExpiresAt && Date.now() > TOKEN.refreshExpiresAt) throw sessionExpired("Refresh token expired");
   const params = new URLSearchParams({
     client_id: CONFIG.ARCGIS_APP_ID,
     grant_type: "refresh_token",
@@ -145,8 +159,8 @@ async function refreshAccessTokenNow() {
   });
   const res = await fetch(TOKEN_URL, { method: "POST", body: params });
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message || "Token refresh failed");
-  if (!data.access_token) throw new Error("No access token in refresh response");
+  if (data.error) throw sessionExpired(data.error.message || "Token refresh failed");
+  if (!data.access_token) throw sessionExpired("No access token in refresh response");
   return tokenFromResponse(data);
 }
 

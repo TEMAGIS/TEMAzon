@@ -19,7 +19,7 @@
   --radius: 8px;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  color-scheme: light;  
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.4; }
@@ -192,7 +192,7 @@ table.grid { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 .toast-success { background: #1b6b36; } .toast-error { background: #a8231b; }
 
 /* request form */
-.req-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 1rem; padding: 1rem 1.2rem 2rem; max-width: 1300px; margin: 0 auto; align-items: start; }
+.req-layout { display: grid; grid-template-columns: minmax(0, 1fr) 500px; gap: 1.5rem; padding: 1.2rem 1.5rem 2rem; max-width: 1800px; margin: 0 auto; align-items: start; }
 .catalog-tools { position: sticky; top: 0; background: var(--bg); padding-bottom: 0.6rem; z-index: 2; display: flex; flex-direction: column; gap: 0.5rem; }
 .catalog-tools input { width: 100%; padding: 0.6rem 0.8rem; }
 .catalog-list { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -244,3 +244,21 @@ table.grid { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
   .item-card { flex-direction: column; align-items: stretch; }
   .item-actions { justify-content: space-between; }
 }
+
+/* Request form: larger, easier-to-read layout */
+.req-layout { font-size: 17px; }
+.req-layout .catalog-tools input[type="search"] { font-size: 1.05rem; padding: 0.75rem 0.9rem; }
+.req-layout .pill { font-size: 0.95rem; padding: 0.4rem 1rem; }
+.req-layout .item-card { padding: 0.95rem 1.2rem; }
+.req-layout .item-card h3 { font-size: 1.1rem; }
+.req-layout .item-meta, .req-layout .item-device, .req-layout .item-stock { font-size: 0.88rem; }
+.req-layout .item-actions .btn-primary, .req-layout .item-actions button { font-size: 1rem; padding: 0.55rem 1.4rem; }
+.req-layout .cart { padding: 1.3rem; }
+.req-layout .cart h2 { font-size: 1.35rem; }
+.req-layout .cart-line-title { font-size: 1.02rem; }
+.req-layout .cart-line-sub { font-size: 0.85rem; }
+.req-layout .cart label { font-size: 0.95rem; }
+.req-layout .cart input, .req-layout .cart select, .req-layout .cart textarea { font-size: 1.05rem; padding: 0.6rem 0.7rem; }
+.req-layout .cart textarea { min-height: 7rem; }
+.req-layout .cart .btn-primary { font-size: 1.1rem; padding: 0.8rem; }
+.req-layout .cart-summary { font-size: 1.05rem; }
