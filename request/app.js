@@ -124,7 +124,6 @@ function renderCart() {
         <div class="cart-line-main">
           <div class="cart-line-title">${esc(item.description)}</div>
           <div class="cart-line-sub">${esc([item.vendor, item.vendor_item_no && "#" + item.vendor_item_no].filter(Boolean).join(" "))}</div>
-          <input type="text" class="line-note" data-note maxlength="250" placeholder="Note for this item (optional)" value="${esc(note)}" aria-label="Note for ${esc(item.description)}" />
         </div>
         <div class="stepper" role="group" aria-label="Quantity">
           <button type="button" data-dec aria-label="Decrease">−</button>
