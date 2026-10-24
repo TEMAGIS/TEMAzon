@@ -16,7 +16,7 @@ export const CONFIG = {
   //   https://temagis.github.io/TEMAzon/request/
   //   https://temagis.github.io/TEMAzon/console/
   //   https://temagis.github.io/TEMAzon/setup/
-  ARCGIS_APP_ID: "REPLACE_WITH_OAUTH_CLIENT_ID",
+  ARCGIS_APP_ID: "zZU8M0ze0fC1IgJ3",
 
   // Leave blank: each page uses its own folder URL as the redirect URI.
   ARCGIS_REDIRECT_URI: "",
@@ -32,9 +32,9 @@ export const CONFIG = {
   // Items view         = read-only view of Items filtered to restricted = 'no'
   //                      (share with all employees — this is what hides the red items)
   // URLs end in /FeatureServer (items view: /FeatureServer/0).
-  INVENTORY_SERVICE_URL: "", // >>> SETUP <<<
-  REQUESTS_SERVICE_URL: "", // >>> SETUP <<<
-  ITEMS_VIEW_URL: "", // >>> SETUP <<< (after you create the view — see README step 4)
+  INVENTORY_SERVICE_URL: "https://services1.arcgis.com/kILp9lqGUeOhnDbI/arcgis/rest/services/TEMAzon_Inventory/FeatureServer", // >>> SETUP <<<
+  REQUESTS_SERVICE_URL: "https://services1.arcgis.com/kILp9lqGUeOhnDbI/arcgis/rest/services/TEMAzon_Requests/FeatureServer", // >>> SETUP <<<
+  ITEMS_VIEW_URL: "https://services1.arcgis.com/kILp9lqGUeOhnDbI/arcgis/rest/services/TEMAzon_Items_Employee_View/FeatureServer/0", // >>> SETUP <<< (after you create the view — see README step 4)
 
   ITEMS_TABLE_ID: 0,
   TXN_TABLE_ID: 1,
