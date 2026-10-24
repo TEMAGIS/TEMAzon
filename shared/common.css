@@ -192,7 +192,7 @@ table.grid { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 .toast-success { background: #1b6b36; } .toast-error { background: #a8231b; }
 
 /* request form */
-.req-layout { display: grid; grid-template-columns: minmax(0, 1fr) 500px; gap: 1.5rem; padding: 1.2rem 1.5rem 2rem; max-width: 1800px; margin: 0 auto; align-items: start; }
+.req-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1.5rem; padding: 1.2rem 1.5rem 2rem; max-width: 1800px; margin: 0 auto; align-items: start; }
 .catalog-tools { position: sticky; top: 0; background: var(--bg); padding-bottom: 0.6rem; z-index: 2; display: flex; flex-direction: column; gap: 0.5rem; }
 .catalog-tools input { width: 100%; padding: 0.6rem 0.8rem; }
 .catalog-list { display: flex; flex-direction: column; gap: 0.5rem; }
