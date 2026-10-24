@@ -62,7 +62,7 @@ function cardHtml(item) {
     : `<button type="button" class="btn-add" data-add>Add</button>`;
   return `<article class="item-card${inCart ? " in-cart" : ""}" data-id="${esc(item.item_id)}">
     <div class="item-main">
-      <h3>${esc(item.description)}</h3>
+      <h3>${inCart ? `<span class="in-cart-badge" title="In your request">✓ In request</span>` : ""}${esc(item.description)}</h3>
       <div class="item-meta">${esc(meta)} <span class="dot">·</span> ${esc(item.category)}</div>
       ${device}
       <div class="item-stock ${st.cls}">${esc(st.text)}</div>

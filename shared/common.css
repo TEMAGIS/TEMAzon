@@ -197,7 +197,8 @@ table.grid { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
 .catalog-tools input { width: 100%; padding: 0.6rem 0.8rem; }
 .catalog-list { display: flex; flex-direction: column; gap: 0.5rem; }
 .item-card { display: flex; justify-content: space-between; gap: 1rem; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.65rem 0.9rem; }
-.item-card.in-cart { border-color: var(--navy); box-shadow: inset 4px 0 0 var(--navy); }
+.item-card.in-cart { border-color: var(--ok); background: var(--ok-bg); box-shadow: inset 6px 0 0 var(--ok); }
+.in-cart-badge { display: inline-block; margin-right: 0.55rem; padding: 0.1rem 0.55rem; border-radius: 999px; background: var(--ok); color: #fff; font-size: 0.72rem; font-weight: 700; vertical-align: middle; letter-spacing: 0.02em; }
 .item-card h3 { margin: 0 0 0.1rem; font-size: 0.95rem; color: var(--text); }
 .item-meta, .item-device { font-size: 0.78rem; color: var(--muted); }
 .item-stock { font-size: 0.78rem; font-weight: 600; margin-top: 0.15rem; }
