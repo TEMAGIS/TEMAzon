@@ -96,3 +96,6 @@ export const clampInt = (v, min, max) => {
 };
 
 export const unique = (arr) => Array.from(new Set(arr.filter((v) => v !== null && v !== undefined && v !== "")));
+
+/** Returns the URL only if it is a plain http(s) link, else "" (blocks javascript: etc.). */
+export const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "");

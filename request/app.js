@@ -11,7 +11,7 @@ import { CONFIG, REQUEST_STATUS } from "../shared/config.js";
 import { startSession } from "../shared/session.js";
 import { queryAll, applyEdits, applyServiceEdits, getLayerInfo, checkFieldNames, tableUrl, sqlStr } from "../shared/esri-client.js";
 import { REQUESTS_TABLE, LINES_TABLE, fieldNames } from "../shared/schema.js";
-import { $, $$, esc, money, fmtDate, newRequestId, matchesSearch, clampInt, debounce, unique } from "../shared/util.js";
+import { $, $$, esc, safeUrl, money, fmtDate, newRequestId, matchesSearch, clampInt, debounce, unique } from "../shared/util.js";
 import { toast, setStatus, confirmDialog } from "../shared/ui.js";
 
 const ITEMS_URL = CONFIG.ITEMS_VIEW_URL || (CONFIG.INVENTORY_SERVICE_URL ? tableUrl(CONFIG.INVENTORY_SERVICE_URL, CONFIG.ITEMS_TABLE_ID) : "");
@@ -65,6 +65,7 @@ function cardHtml(item) {
       <h3>${inCart ? `<span class="in-cart-badge" title="In your request">✓ In request</span>` : ""}${esc(item.description)}</h3>
       <div class="item-meta">${esc(meta)} <span class="dot">·</span> ${esc(item.category)}</div>
       ${device}
+      ${safeUrl(item.product_url) ? `<a class="item-link" href="${esc(safeUrl(item.product_url))}" target="_blank" rel="noopener noreferrer">View product ↗</a>` : ""}
       <div class="item-stock ${st.cls}">${esc(st.text)}</div>
     </div>
     <div class="item-actions">${price}${action}</div>
@@ -122,7 +123,7 @@ function renderCart() {
     .map(
       ({ item, qty, note }) => `<div class="cart-line" data-id="${esc(item.item_id)}">
         <div class="cart-line-main">
-          <div class="cart-line-title">${esc(item.description)}</div>
+          <div class="cart-line-title">${safeUrl(item.product_url) ? `<a href="${esc(safeUrl(item.product_url))}" target="_blank" rel="noopener noreferrer" title="View product page">${esc(item.description)} ↗</a>` : esc(item.description)}</div>
           <div class="cart-line-sub">${esc([item.vendor, item.vendor_item_no && "#" + item.vendor_item_no].filter(Boolean).join(" "))}</div>
         </div>
         <div class="stepper" role="group" aria-label="Quantity">

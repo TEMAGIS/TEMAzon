@@ -1,7 +1,7 @@
 // Inventory tab: current stock (from the ledger-backed qty_on_hand), filters,
 // stock actions, count mode, CSV export.
 import { CONFIG } from "../shared/config.js";
-import { $, $$, esc, money, matchesSearch, toCSV, downloadText, unique, debounce, clampInt } from "../shared/util.js";
+import { $, $$, esc, safeUrl, money, matchesSearch, toCSV, downloadText, unique, debounce, clampInt } from "../shared/util.js";
 import { toast, confirmDialog } from "../shared/ui.js";
 import { S, isRestricted, stockState } from "./state.js";
 import { postStockMoves, openStockDialog, openItemDialog } from "./stock.js";
@@ -60,7 +60,7 @@ export function renderInventory() {
         const r = isRestricted(i);
         return `<tr data-id="${esc(i.item_id)}" class="${r ? "row-restricted" : ""}${i.active === "no" ? " row-inactive" : ""}">
           <td class="mono">${esc(i.item_id)}</td>
-          <td class="item-cell"><div class="t">${i.product_url ? `<a href="${esc(i.product_url)}" target="_blank" rel="noopener noreferrer">${esc(i.description)}</a>` : esc(i.description)}</div>
+          <td class="item-cell"><div class="t">${safeUrl(i.product_url) ? `<a href="${esc(safeUrl(i.product_url))}" target="_blank" rel="noopener noreferrer" title="Open product page">${esc(i.description)} ↗</a>` : esc(i.description)}</div>
             <div class="sub">${esc([i.vendor, i.vendor_item_no].filter(Boolean).join(" · "))}${i.device_used_on ? " · for " + esc(i.device_used_on) : ""}</div></td>
           <td>${esc(i.category)}</td>
           <td class="num qty-cell stock-${st}">${F.count ? `<input type="number" min="0" step="1" class="count-input" data-count value="${qty}" data-orig="${qty}" aria-label="Count for ${esc(i.description)}" />` : `<b>${qty}</b>`}</td>
