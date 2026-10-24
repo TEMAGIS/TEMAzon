@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TEMAzon — Supply Request</title>
+  <link rel="stylesheet" href="../shared/common.css" />
+</head>
+<body class="app-request">
+  <!-- Sign-in -->
+  <div id="sign-in-screen" class="gate" hidden>
+    <div class="login-card">
+      <div class="login-brand">
+        <svg class="tn-badge" viewBox="0 0 100 100" role="img" aria-label="Tennessee state logo"><rect width="100" height="84" fill="#D22730"/><rect y="84" width="100" height="5" fill="#fff"/><rect y="89" width="100" height="11" fill="#002868"/><text x="50" y="70" text-anchor="middle" textLength="86" lengthAdjust="spacingAndGlyphs" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="74" fill="#fff">TN</text></svg>
+        <div>
+          <div class="login-title">TEMAzon Supply Request</div>
+          <div class="login-sub">Sign in with your ArcGIS Online account to request office supplies, toner and equipment.</div>
+        </div>
+      </div>
+      <div id="login-error" class="login-error" role="alert"></div>
+      <button id="sign-in-btn" class="login-btn" type="button">Sign in with ArcGIS Online</button>
+    </div>
+  </div>
+
+  <!-- Signed in but not on the Users list -->
+  <div id="not-provisioned-screen" class="gate" hidden>
+    <div class="login-card">
+      <div class="login-title">No access yet</div>
+      <p id="not-provisioned-message"></p>
+      <button id="np-signout-btn" type="button">Sign out</button>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <svg class="tn-badge tn-badge-sm" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="84" fill="#D22730"/><rect y="84" width="100" height="5" fill="#fff"/><rect y="89" width="100" height="11" fill="#002868"/><text x="50" y="70" text-anchor="middle" textLength="86" lengthAdjust="spacingAndGlyphs" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="74" fill="#fff">TN</text></svg>
+      <h1>TEMAzon <span class="thin">Supply Request</span></h1>
+    </div>
+    <nav class="topbar-tabs" id="tabs" hidden>
+      <button type="button" class="tab-btn active" data-tab="new">New request</button>
+      <button type="button" class="tab-btn" data-tab="mine">My requests <span id="mine-badge" class="badge" hidden></span></button>
+    </nav>
+    <div class="topbar-right">
+      <span id="user-label"></span>
+      <button id="sign-out-btn" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <div id="status-bar" role="status" hidden></div>
+
+  <!-- NEW REQUEST -->
+  <main id="screen-new" class="req-layout" hidden>
+    <section class="catalog" aria-label="Catalog">
+      <div class="catalog-tools">
+        <input id="search" type="search" placeholder="Search items, vendor #, printer model…" autocomplete="off" aria-label="Search catalog" />
+        <div id="cat-pills" class="pill-row" role="group" aria-label="Filter by category"></div>
+      </div>
+      <div id="catalog-list" class="catalog-list" aria-live="polite"></div>
+    </section>
+
+    <aside class="cart" aria-label="Your request">
+      <h2>Your request</h2>
+      <div id="cart-empty" class="empty">Nothing added yet. Use <b>Add</b> on any item.</div>
+      <div id="cart-lines" class="cart-lines"></div>
+      <form id="request-form" class="cart-form" novalidate hidden>
+        <div class="two-col">
+          <label>Section
+            <select id="f-section" required></select>
+          </label>
+          <label>Region / office
+            <select id="f-region" required></select>
+          </label>
+        </div>
+        <label>Deliver to <span class="hint">(room, building or person — optional)</span>
+          <input id="f-deliver" type="text" maxlength="250" />
+        </label>
+        <label>Reason / notes <span class="hint">(optional)</span>
+          <textarea id="f-note" rows="3" maxlength="900"></textarea>
+        </label>
+        <div id="cart-summary" class="cart-summary"></div>
+        <div id="form-error" class="form-error" role="alert" hidden></div>
+        <button type="submit" id="submit-btn" class="btn-primary btn-block">Submit request</button>
+      </form>
+    </aside>
+  </main>
+
+  <!-- MY REQUESTS -->
+  <main id="screen-mine" class="mine-layout" hidden>
+    <div class="mine-head">
+      <h2>My requests</h2>
+      <button type="button" id="refresh-mine">Refresh</button>
+    </div>
+    <div id="mine-list" class="mine-list"></div>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

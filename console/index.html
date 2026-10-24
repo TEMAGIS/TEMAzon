@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TEMAzon — Management Console</title>
+  <link rel="stylesheet" href="../shared/common.css" />
+</head>
+<body class="app-console">
+  <div id="sign-in-screen" class="gate" hidden>
+    <div class="login-card">
+      <div class="login-brand">
+        <svg class="tn-badge" viewBox="0 0 100 100" role="img" aria-label="Tennessee state logo"><rect width="100" height="84" fill="#D22730"/><rect y="84" width="100" height="5" fill="#fff"/><rect y="89" width="100" height="11" fill="#002868"/><text x="50" y="70" text-anchor="middle" textLength="86" lengthAdjust="spacingAndGlyphs" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="74" fill="#fff">TN</text></svg>
+        <div>
+          <div class="login-title">TEMAzon Management Console</div>
+          <div class="login-sub">Property Office only. Sign in with your ArcGIS Online account.</div>
+        </div>
+      </div>
+      <div id="login-error" class="login-error" role="alert"></div>
+      <button id="sign-in-btn" class="login-btn" type="button">Sign in with ArcGIS Online</button>
+    </div>
+  </div>
+
+  <div id="not-provisioned-screen" class="gate" hidden>
+    <div class="login-card">
+      <div class="login-title">No access</div>
+      <p id="not-provisioned-message"></p>
+      <button id="np-signout-btn" type="button">Sign out</button>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div class="topbar-brand">
+      <svg class="tn-badge tn-badge-sm" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="84" fill="#D22730"/><rect y="84" width="100" height="5" fill="#fff"/><rect y="89" width="100" height="11" fill="#002868"/><text x="50" y="70" text-anchor="middle" textLength="86" lengthAdjust="spacingAndGlyphs" font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="74" fill="#fff">TN</text></svg>
+      <h1>TEMAzon <span class="thin">Console</span></h1>
+    </div>
+    <nav class="topbar-tabs" id="tabs" hidden>
+      <button type="button" class="tab-btn active" data-tab="inv">Inventory</button>
+      <button type="button" class="tab-btn" data-tab="req">Requests <span id="req-badge" class="badge" hidden></span></button>
+      <button type="button" class="tab-btn" data-tab="txn">Transactions</button>
+      <button type="button" class="tab-btn" data-tab="ent">Entities</button>
+    </nav>
+    <div class="topbar-right">
+      <button id="reload-btn" type="button" hidden title="Reload all data from ArcGIS Online">Refresh data</button>
+      <span id="user-label"></span>
+      <button id="sign-out-btn" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <div id="status-bar" role="status" hidden></div>
+  <datalist id="users-dl"></datalist>
+
+  <!-- INVENTORY -->
+  <main id="screen-inv" class="screen" hidden>
+    <div class="tiles" id="inv-tiles"></div>
+    <div class="toolbar">
+      <input id="inv-search" type="search" placeholder="Search item, vendor #, device…" aria-label="Search inventory" autocomplete="off" />
+      <select id="inv-cat" aria-label="Category"></select>
+      <select id="inv-vis" aria-label="Visibility">
+        <option value="all">All items</option>
+        <option value="visible">Employee-visible</option>
+        <option value="restricted">Restricted only</option>
+        <option value="inactive">Discontinued</option>
+      </select>
+      <select id="inv-stock" aria-label="Stock level">
+        <option value="all">Any stock</option>
+        <option value="instock">In stock</option>
+        <option value="low">Low stock</option>
+        <option value="out">Out of stock</option>
+      </select>
+      <span class="spacer"></span>
+      <span id="inv-count" class="sub"></span>
+      <button type="button" id="count-toggle" title="Enter counts for many items at once">Count mode</button>
+      <button type="button" id="inv-export">Export CSV</button>
+      <button type="button" id="inv-add" class="btn-primary">+ Add item</button>
+    </div>
+    <div id="count-bar" class="banner banner-info" hidden>
+      <span><b>Count mode:</b> type the real on-hand number into any row, then save. Each change is written to the ledger as an initial count or adjustment.</span>
+      <span class="spacer"></span>
+      <button type="button" id="count-cancel">Cancel</button>
+      <button type="button" id="count-save" class="btn-primary">Save counts</button>
+    </div>
+    <div class="table-wrap tall"><table class="grid" id="inv-table">
+      <thead><tr><th>ID</th><th>Item</th><th>Category</th><th class="num">On hand</th><th class="num">Reorder</th><th class="num">Unit cost</th><th class="num">Value</th><th>Visibility</th><th></th></tr></thead>
+      <tbody id="inv-body"></tbody>
+    </table></div>
+  </main>
+
+  <!-- REQUESTS -->
+  <main id="screen-req" class="screen" hidden>
+    <div class="toolbar">
+      <div id="req-pills" class="pill-row" role="group" aria-label="Filter by status"></div>
+      <span class="spacer"></span>
+      <input id="req-search" type="search" placeholder="Search requester, section, request #…" aria-label="Search requests" autocomplete="off" />
+    </div>
+    <div class="table-wrap tall"><table class="grid">
+      <thead><tr><th>Request</th><th>Submitted</th><th>Requester</th><th>Section</th><th>Region</th><th class="num">Items</th><th class="num">Est. total</th><th>Status</th><th></th></tr></thead>
+      <tbody id="req-body"></tbody>
+    </table></div>
+  </main>
+
+  <!-- TRANSACTIONS -->
+  <main id="screen-txn" class="screen" hidden>
+    <div class="toolbar">
+      <input id="txn-search" type="search" placeholder="Search item, person, request #, note…" aria-label="Search transactions" autocomplete="off" />
+      <select id="txn-type" aria-label="Type"></select>
+      <label class="inline">From <input id="txn-from" type="date" /></label>
+      <label class="inline">To <input id="txn-to" type="date" /></label>
+      <span id="txn-item-chip" class="chip" hidden></span>
+      <span class="spacer"></span>
+      <span id="txn-count" class="sub"></span>
+      <button type="button" id="txn-reconcile">Reconcile</button>
+      <button type="button" id="txn-export">Export CSV</button>
+    </div>
+    <div class="table-wrap tall"><table class="grid">
+      <thead><tr><th>Date</th><th>Item</th><th>Type</th><th class="num">Change</th><th class="num">After</th><th>Person / section / region</th><th>Request</th><th>By</th><th>Note</th></tr></thead>
+      <tbody id="txn-body"></tbody>
+    </table></div>
+  </main>
+
+  <!-- ENTITIES -->
+  <main id="screen-ent" class="screen ent-layout" hidden>
+    <aside class="ent-side">
+      <div id="ent-type-pills" class="pill-row" role="group" aria-label="Entity type"></div>
+      <input id="ent-search" type="search" placeholder="Find…" aria-label="Find entity" autocomplete="off" />
+      <ul id="ent-list" class="ent-list"></ul>
+    </aside>
+    <section id="ent-detail" class="ent-detail"></section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

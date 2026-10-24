@@ -1,0 +1,98 @@
+// Small shared helpers (no DOM side effects at import time).
+
+export const $ = (sel, root = document) => root.querySelector(sel);
+export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+/** HTML-escape anything that goes into a template string. */
+export const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ESC[c]);
+
+export const money = (n) =>
+  n === null || n === undefined || n === "" || Number.isNaN(Number(n))
+    ? "—"
+    : Number(n).toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+export const fmtDate = (ms) =>
+  ms ? new Date(Number(ms)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+export const fmtDateTime = (ms) =>
+  ms
+    ? new Date(Number(ms)).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    : "—";
+
+export const DAY_MS = 86400000;
+export const MONTH_MS = 30.4375 * DAY_MS;
+
+export function randomCode(len = 4) {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => alphabet[b % alphabet.length]).join("");
+}
+
+/** e.g. REQ-261024-7K3Q */
+export function newRequestId(now = new Date()) {
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `REQ-${yy}${mm}${dd}-${randomCode(4)}`;
+}
+
+/** e.g. TXN-261024-9XK2PQ */
+export function newTxnId(now = new Date()) {
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return `TXN-${yy}${mm}${dd}-${randomCode(6)}`;
+}
+
+export function debounce(fn, ms = 200) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+}
+
+const csvCell = (v) => {
+  const s = v === null || v === undefined ? "" : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+/** cols: [{key, label, get?}] */
+export function toCSV(rows, cols) {
+  const head = cols.map((c) => csvCell(c.label)).join(",");
+  const body = rows.map((r) => cols.map((c) => csvCell(c.get ? c.get(r) : r[c.key])).join(",")).join("\r\n");
+  return head + "\r\n" + body;
+}
+
+export function downloadText(filename, text, mime = "text/csv;charset=utf-8") {
+  const blob = new Blob([text], { type: mime });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 0);
+}
+
+/** Case-insensitive "contains every word" match across several strings. */
+export function matchesSearch(haystackParts, query) {
+  const words = String(query || "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!words.length) return true;
+  const hay = haystackParts.map((p) => String(p ?? "").toLowerCase()).join(" ");
+  return words.every((w) => hay.includes(w));
+}
+
+export const clampInt = (v, min, max) => {
+  const n = Math.round(Number(v));
+  if (Number.isNaN(n)) return min;
+  return Math.min(max, Math.max(min, n));
+};
+
+export const unique = (arr) => Array.from(new Set(arr.filter((v) => v !== null && v !== undefined && v !== "")));
