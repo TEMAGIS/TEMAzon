@@ -4,9 +4,10 @@
 //   * Rows are matched by Item ID. A blank Item ID = a NEW item.
 //   * Only the item details are imported (category, description, vendor, cost,
 //     reorder level, visibility, status, links, notes).
-//   * Qty on hand is NEVER changed by an import, so the ledger stays accurate
-//     (use Count mode / Receive / Issue / Adjust). The one exception: a NEW
-//     item may carry a starting quantity, which is recorded as an INITIAL entry.
+//   * Qty on hand is only changed if you tick "Also apply quantity changes as
+//     counts" in the preview. Then each difference is written as a ledger entry
+//     (INITIAL for an item's first count, otherwise ADJUST), never a silent edit.
+//     A NEW item may carry a starting quantity, recorded as an INITIAL entry.
 //   * A column that is present in the file is applied to every row (a blank
 //     cell clears an optional field). A column that is missing is left alone.
 //   * Nothing is written until you have seen the preview and click Apply.
@@ -17,7 +18,7 @@ import { CONFIG } from "../shared/config.js";
 import { esc, parseCSV, safeUrl, newTxnId } from "../shared/util.js";
 import { openModal, toast } from "../shared/ui.js";
 import { S, URLS, reindexItems, isRestricted } from "./state.js";
-import { nextItemId } from "./stock.js";
+import { nextItemId, postStockMoves } from "./stock.js";
 
 const norm = (h) => String(h || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -99,7 +100,7 @@ function buildPlan(text) {
   const qtyCol = header.findIndex((h) => QTY_NAMES.includes(h));
   if (colOf.item_id === undefined) throw new Error('The file needs an "Item ID" column (leave a cell blank to add a new item).');
 
-  const plan = { updates: [], adds: [], unchanged: 0, errors: [], qtyDiffs: 0, missingRestricted: false, notes: [] };
+  const plan = { updates: [], adds: [], qty: [], unchanged: 0, errors: [], missingRestricted: false, notes: [] };
   const seen = new Set();
   const issued = {}; // prefix -> highest number handed out in this file
   const newId = (category) => {
@@ -147,12 +148,24 @@ function buildPlan(text) {
         const old = current(item, f);
         if (!same(old, v)) changes.push({ f, old, v });
       }
+      let qtyChanged = false;
       if (qtyCol >= 0) {
         const q = String(cells[qtyCol] ?? "").trim();
-        if (q !== "" && Number(q) !== (Number(item.qty_on_hand) || 0)) plan.qtyDiffs++;
+        if (q !== "") {
+          const n = Number(q);
+          if (!Number.isInteger(n) || n < 0) {
+            plan.errors.push({ rowNo, id, msg: `Qty on hand "${q}" must be a whole number, 0 or more` });
+            continue;
+          }
+          const from = Number(item.qty_on_hand) || 0;
+          if (n !== from) {
+            plan.qty.push({ item, from, to: n });
+            qtyChanged = true;
+          }
+        }
       }
       if (changes.length) plan.updates.push({ item, changes });
-      else plan.unchanged++;
+      else if (!qtyChanged) plan.unchanged++;
     } else {
       // brand-new item
       const missing = ["category", "description"].filter((f) => !attrs[f]);
@@ -207,18 +220,23 @@ function previewHtml(plan, fileName) {
     <p class="sub">File: <b>${esc(fileName)}</b></p>
     <div class="banner ${plan.errors.length ? "banner-warn" : "banner-ok"}">
       <b>${plan.updates.length}</b> item${plan.updates.length === 1 ? "" : "s"} to update ·
-      <b>${plan.adds.length}</b> new · ${plan.unchanged} unchanged · <b>${plan.errors.length}</b> with problems
+      <b>${plan.adds.length}</b> new · ${plan.qty.length} quantity difference${plan.qty.length === 1 ? "" : "s"} · ${plan.unchanged} unchanged · <b>${plan.errors.length}</b> with problems
     </div>
     ${plan.errors.length ? `<div class="banner banner-warn" style="display:block"><b>Fix these in the file and import again — nothing has been saved:</b><ul>${errs.join("")}</ul>${plan.errors.length > 60 ? `<div class="sub">…and ${plan.errors.length - 60} more.</div>` : ""}</div>` : ""}
-    ${plan.qtyDiffs ? `<p class="sub">${plan.qtyDiffs} row${plan.qtyDiffs === 1 ? " has" : "s have"} a different Qty on hand in the file. <b>Quantities are not changed by an import</b> — use Count mode so the ledger stays accurate.</p>` : ""}
+    ${plan.qty.length && !plan.errors.length ? `
+      <h3>Quantity differences (${plan.qty.length})</h3>
+      <label class="check"><input type="checkbox" id="imp-qty" /> Also apply these as counts — each is recorded in the ledger, so the history stays complete</label>
+      <p class="sub">The file's number replaces what is on hand <b>right now</b>. If stock was received or issued after you exported, export again first.</p>
+      <div class="table-wrap"><table class="grid"><thead><tr><th>ID</th><th>Item</th><th>On hand now</th><th>Count in file</th></tr></thead><tbody>${plan.qty.slice(0, MAX).map(({ item, from, to }) => `<tr><td class="mono">${esc(item.item_id)}</td><td>${esc(item.description)}</td><td>${from}</td><td><b>${to}</b></td></tr>`).join("")}</tbody></table></div>
+      ${plan.qty.length > MAX ? `<p class="sub">Showing the first ${MAX} of ${plan.qty.length}.</p>` : ""}` : ""}
     ${plan.missingRestricted && plan.adds.length ? `<p class="sub">New items with no Restricted value start <b>hidden from employees</b> until you change them.</p>` : ""}
     ${plan.notes.map((n) => `<p class="sub">${esc(n)}</p>`).join("")}
     ${plan.updates.length ? `<h3>Changes</h3><div class="table-wrap"><table class="grid"><thead><tr><th>ID</th><th>Item</th><th>What changes</th></tr></thead><tbody>${chg.join("")}</tbody></table></div>${plan.updates.length > MAX ? `<p class="sub">Showing the first ${MAX} of ${plan.updates.length}. All will be applied.</p>` : ""}` : ""}
     ${plan.adds.length ? `<h3>New items</h3><div class="table-wrap"><table class="grid"><thead><tr><th>ID</th><th>Item</th><th>Details</th></tr></thead><tbody>${adds.join("")}</tbody></table></div>` : ""}
-    ${!plan.updates.length && !plan.adds.length && !plan.errors.length ? "<p>Nothing to change — the file matches what's already in the inventory.</p>" : ""}`;
+    ${!plan.updates.length && !plan.adds.length && !plan.qty.length && !plan.errors.length ? "<p>Nothing to change — the file matches what's already in the inventory.</p>" : ""}`;
 }
 
-async function apply(plan, onDone) {
+async function apply(plan, onDone, applyQty) {
   let done = 0;
   try {
     // 1) updates to existing items (only the fields that changed; qty_on_hand is never touched)
@@ -259,13 +277,33 @@ async function apply(plan, onDone) {
       txnAdds.forEach((a, k) => S.txns.push({ ...a.attributes, _oid: txnRes[k]?.objectId ?? null }));
       done += batch.length;
     }
+    // 3) counts (optional): written through the ledger, same as Count mode
+    let counted = 0;
+    if (applyQty) {
+      for (let i = 0; i < plan.qty.length; i += 100) {
+        const batch = plan.qty.slice(i, i + 100);
+        const moves = batch.map(({ item, to }) => ({
+          item,
+          type: S.txns.some((t) => t.item_id === item.item_id) ? "ADJUST" : "INITIAL",
+          setTo: to,
+          note: "Count from CSV import",
+        }));
+        try {
+          await postStockMoves(moves);
+        } catch (e) {
+          if (!/No quantities changed/.test(e.message)) throw e; // stock already matched the file
+        }
+        counted += batch.length;
+      }
+    }
+    plan.counted = counted;
   } catch (err) {
     reindexItems();
     if (onDone) onDone();
     throw new Error(`Stopped after saving ${done} of ${plan.updates.length + plan.adds.length} items: ${err.message}. Reload the data and import the same file again — items already saved will show as unchanged.`);
   }
   reindexItems();
-  toast(`Import complete: ${plan.updates.length} updated, ${plan.adds.length} added.`, "success", 6000);
+  toast(`Import complete: ${plan.updates.length} updated, ${plan.adds.length} added${plan.counted ? `, ${plan.counted} counts recorded` : ""}.`, "success", 6000);
   if (onDone) onDone();
 }
 
@@ -277,14 +315,25 @@ export async function startImport(file, { onDone } = {}) {
   reindexItems();
   const plan = buildPlan(text);
   const total = plan.updates.length + plan.adds.length;
+  const canApply = !plan.errors.length && (total > 0 || plan.qty.length > 0);
   openModal({
     title: "Import items from CSV",
     wide: true,
     body: previewHtml(plan, file.name),
     buttons: [
-      { label: plan.errors.length || !total ? "Close" : "Cancel" },
-      ...(total && !plan.errors.length
-        ? [{ label: `Apply ${total} change${total === 1 ? "" : "s"}`, kind: "primary", action: () => apply(plan, onDone) }]
+      { label: canApply ? "Cancel" : "Close" },
+      ...(canApply
+        ? [
+            {
+              label: "Apply changes",
+              kind: "primary",
+              action: (api) => {
+                const applyQty = !!(api.el.querySelector("#imp-qty") || {}).checked;
+                if (!total && !applyQty) throw new Error("Only quantity differences were found. Tick the box to apply them, or Cancel.");
+                return apply(plan, onDone, applyQty);
+              },
+            },
+          ]
         : []),
     ],
   });
