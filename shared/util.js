@@ -99,3 +99,38 @@ export const unique = (arr) => Array.from(new Set(arr.filter((v) => v !== null &
 
 /** Returns the URL only if it is a plain http(s) link, else "" (blocks javascript: etc.). */
 export const safeUrl = (u) => (/^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "");
+
+/** Parses CSV text (quotes, doubled quotes, CRLF, line breaks inside quotes, BOM) into an array of rows (arrays of strings). */
+export function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQ = false;
+  const src = String(text || "").replace(/^\uFEFF/, "");
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (inQ) {
+      if (c === '"') {
+        if (src[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else inQ = false;
+      } else cell += c;
+    } else if (c === '"') inQ = true;
+    else if (c === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && src[i + 1] === "\n") i++;
+      row.push(cell);
+      cell = "";
+      rows.push(row);
+      row = [];
+    } else cell += c;
+  }
+  if (cell !== "" || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows.filter((r) => r.some((v) => String(v).trim() !== ""));
+}

@@ -5,6 +5,7 @@ import { $, $$, esc, safeUrl, money, matchesSearch, toCSV, downloadText, unique,
 import { toast, confirmDialog } from "../shared/ui.js";
 import { S, isRestricted, stockState } from "./state.js";
 import { postStockMoves, openStockDialog, openItemDialog } from "./stock.js";
+import { startImport } from "./import.js";
 
 const F = { q: "", cat: "", vis: "all", stock: "all", count: false };
 
@@ -124,6 +125,9 @@ export function exportInventoryCSV() {
       { label: "Restricted", get: (i) => (isRestricted(i) ? "yes" : "no") },
       { key: "active", label: "Active" },
       { key: "product_url", label: "Link" },
+      { key: "product_title", label: "Product title" },
+      { key: "device_used_on", label: "Device used on" },
+      { key: "notes", label: "Notes" },
     ])
   );
 }
@@ -137,6 +141,18 @@ export function initInventory() {
   $("#inv-stock").addEventListener("change", (e) => { F.stock = e.target.value; rerender(); });
   $("#inv-add").addEventListener("click", () => openItemDialog(null, { onDone: rerender }));
   $("#inv-export").addEventListener("click", exportInventoryCSV);
+  $("#inv-import").addEventListener("click", () => $("#inv-import-file").click());
+  $("#inv-import-file").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (file) {
+      try {
+        await startImport(file, { onDone: rerender });
+      } catch (err) {
+        toast(err.message, "error", 8000);
+      }
+    }
+  });
   $("#count-toggle").addEventListener("click", (e) => {
     F.count = !F.count;
     e.currentTarget.classList.toggle("active", F.count);
