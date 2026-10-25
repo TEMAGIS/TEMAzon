@@ -35,9 +35,12 @@ const S = {
 function stockInfo(item) {
   const q = Number(item.qty_on_hand) || 0;
   const low = item.reorder_level != null && item.reorder_level !== "" ? Number(item.reorder_level) : null;
+  const mode = CONFIG.STOCK_VISIBILITY || "full";
+  if (mode === "hidden") return { cls: "", text: "" };
+  const exact = mode === "full";
   if (q <= 0) return { cls: "stock-out", text: "Out of stock" };
-  if (low != null && q <= low) return { cls: "stock-low", text: `Low — ${q} in stock` };
-  return { cls: "stock-ok", text: `${q} in stock` };
+  if (low != null && q <= low) return { cls: "stock-low", text: exact ? `Low — ${q} in stock` : "Low stock" };
+  return { cls: "stock-ok", text: exact ? `${q} in stock` : "In stock" };
 }
 
 const parseHTML = (html) => {
@@ -66,7 +69,7 @@ function cardHtml(item) {
       <div class="item-meta">${esc(meta)} <span class="dot">·</span> ${esc(item.category)}</div>
       ${device}
       ${safeUrl(item.product_url) ? `<a class="item-link" href="${esc(safeUrl(item.product_url))}" target="_blank" rel="noopener noreferrer">View product ↗</a>` : ""}
-      <div class="item-stock ${st.cls}">${esc(st.text)}</div>
+      ${st.text ? `<div class="item-stock ${st.cls}">${esc(st.text)}</div>` : ""}
     </div>
     <div class="item-actions">${price}${action}</div>
   </article>`;

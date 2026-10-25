@@ -56,6 +56,14 @@ export const CONFIG = {
 
   // --- Request form ---
   SHOW_PRICES_TO_EMPLOYEES: false,
+
+  // What employees see about stock on the request form:
+  //   "full"   = exact count   ("12 in stock", "Low — 3 in stock")
+  //   "status" = no numbers    ("In stock", "Low stock", "Out of stock")
+  //   "hidden" = nothing shown
+  // Note: this only changes the screen. To keep the count out of the data itself,
+  // remove qty_on_hand from the employee view's fields in ArcGIS Online.
+  STOCK_VISIBILITY: "status",
   MAX_QTY_PER_LINE: 999,
 
   // --- Console: burn-rate review ---
