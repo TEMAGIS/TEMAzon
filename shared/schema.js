@@ -3,7 +3,7 @@
 // page to create them, and the single source of truth for field names.
 //
 //   TEMAzon_Inventory : Items (0), Transactions (1)   — Property Officer only
-//   TEMAzon_Requests  : Requests (0), RequestLines (1) — all employees
+//   TEMAzon_Requests  : Requests (0), RequestLines (1), Lists (found by name) — all employees
 // ---------------------------------------------------------------------------
 
 const str = (name, length, alias, extra = {}) => ({ name, type: "esriFieldTypeString", alias: alias || name, length, ...extra });
@@ -99,6 +99,17 @@ export const LINES_TABLE = {
     int("qty_approved", "Qty approved"),
     str("line_note", 500, "Employee note"),
     str("admin_note", 500, "Admin note"),
+  ],
+};
+
+/** Dropdown values for the request form (Section / Region). Edited from the console's Settings tab. */
+export const LISTS_TABLE = {
+  name: "Lists",
+  displayField: "value",
+  fields: [
+    str("list_name", 20, "List"), // section | region
+    str("value", 80, "Value"),
+    int("sort_order", "Order"),
   ],
 };
 

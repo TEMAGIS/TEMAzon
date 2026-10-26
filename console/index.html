@@ -39,6 +39,7 @@
       <button type="button" class="tab-btn" data-tab="req">Requests <span id="req-badge" class="badge" hidden></span></button>
       <button type="button" class="tab-btn" data-tab="txn">Transactions</button>
       <button type="button" class="tab-btn" data-tab="ent">Entities</button>
+      <button type="button" class="tab-btn" data-tab="set">Settings</button>
     </nav>
     <div class="topbar-right">
       <button id="reload-btn" type="button" hidden title="Reload all data from ArcGIS Online">Refresh data</button>
@@ -128,6 +129,11 @@
       <ul id="ent-list" class="ent-list"></ul>
     </aside>
     <section id="ent-detail" class="ent-detail"></section>
+  </main>
+
+  <!-- SETTINGS -->
+  <main id="screen-set" class="screen" hidden>
+    <div id="set-body"></div>
   </main>
 
   <script type="module" src="app.js"></script>

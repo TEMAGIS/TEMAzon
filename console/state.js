@@ -18,6 +18,7 @@ export const S = {
   txns: [],
   reqs: [],
   lines: [],
+  lists: { url: "", rows: [], stored: {}, error: "" }, // Section / Region dropdown lists
   oid: { items: "OBJECTID", txns: "OBJECTID", reqs: "OBJECTID", lines: "OBJECTID" },
   tab: "inv",
   actions: {}, // cross-module callbacks, filled in by app.js

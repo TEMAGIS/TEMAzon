@@ -13,6 +13,7 @@ import { queryAll, applyEdits, applyServiceEdits, getLayerInfo, checkFieldNames,
 import { REQUESTS_TABLE, LINES_TABLE, fieldNames } from "../shared/schema.js";
 import { $, $$, esc, safeUrl, money, fmtDate, newRequestId, matchesSearch, clampInt, debounce, unique } from "../shared/util.js";
 import { toast, setStatus, confirmDialog } from "../shared/ui.js";
+import { loadLists } from "../shared/lists.js";
 
 const ITEMS_URL = CONFIG.ITEMS_VIEW_URL || (CONFIG.INVENTORY_SERVICE_URL ? tableUrl(CONFIG.INVENTORY_SERVICE_URL, CONFIG.ITEMS_TABLE_ID) : "");
 const REQ_URL = CONFIG.REQUESTS_SERVICE_URL ? tableUrl(CONFIG.REQUESTS_SERVICE_URL, CONFIG.REQ_TABLE_ID) : "";
@@ -415,6 +416,7 @@ async function onReady({ me }) {
   }
   setStatus("Loading catalog…");
   wire();
+  await loadLists(); // Section / Region choices set in the console (falls back to config.js)
   $("#f-region").innerHTML = `<option value="">Select…</option>` + CONFIG.REGIONS.map((r) => `<option>${esc(r)}</option>`).join("");
   $("#f-section").innerHTML = `<option value="">Select…</option>` + CONFIG.SECTIONS.map((r) => `<option>${esc(r)}</option>`).join("");
   try {

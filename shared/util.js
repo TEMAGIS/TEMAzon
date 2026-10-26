@@ -65,13 +65,54 @@ export function toCSV(rows, cols) {
   return head + "\r\n" + body;
 }
 
+const inFrame = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true; // cross-origin parent = embedded
+  }
+};
+
+function saveBlob(blob, filename, doc) {
+  const a = doc.createElement("a");
+  a.href = (doc.defaultView || window).URL.createObjectURL(blob);
+  a.download = filename;
+  doc.body.appendChild(a);
+  a.click();
+  return a;
+}
+
+/**
+ * Downloads text as a file. When the app is embedded (e.g. an ArcGIS Experience
+ * Builder Embed widget) the host iframe often blocks downloads, so the file is
+ * saved from a small separate window instead.
+ */
 export function downloadText(filename, text, mime = "text/csv;charset=utf-8") {
   const blob = new Blob([text], { type: mime });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
+  if (inFrame()) {
+    const w = window.open("", "_blank", "width=480,height=220");
+    if (w) {
+      try {
+        const d = w.document;
+        d.title = filename;
+        d.body.style.cssText = "font:14px Arial,sans-serif;padding:24px;";
+        d.body.textContent = "";
+        const msg = d.createElement("p");
+        msg.textContent = "Your download should start automatically. If it does not, use the link below.";
+        d.body.appendChild(msg);
+        const a = saveBlob(blob, filename, d);
+        a.textContent = "Download " + filename;
+        const done = d.createElement("p");
+        done.textContent = "You can close this window once the file has downloaded.";
+        d.body.appendChild(done);
+        return;
+      } catch {
+        w.close();
+      }
+    }
+    // popup blocked -> fall through to the normal attempt
+  }
+  const a = saveBlob(blob, filename, document);
   setTimeout(() => {
     URL.revokeObjectURL(a.href);
     a.remove();

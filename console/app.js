@@ -17,11 +17,13 @@ import { initInventory, renderInventory } from "./inventory.js";
 import { initRequests, renderRequests } from "./requests.js";
 import { initTransactions, renderTransactions } from "./transactions.js";
 import { initEntities, renderEntities } from "./entities.js";
+import { initSettings } from "./settings.js";
+import { loadLists } from "../shared/lists.js";
 
 function switchTab(tab) {
   S.tab = tab;
   $$("#tabs .tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
-  for (const t of ["inv", "req", "txn", "ent"]) $(`#screen-${t}`).hidden = t !== tab;
+  for (const t of ["inv", "req", "txn", "ent", "set"]) $(`#screen-${t}`).hidden = t !== tab;
   const render = S.render[tab];
   if (render) render();
 }
@@ -56,8 +58,10 @@ async function onReady({ me }) {
   initRequests();
   initTransactions();
   initEntities();
+  initSettings();
 
   await loadAll();
+  S.lists = await loadLists(); // never throws; falls back to the lists in config.js
   // schema sanity check (console warnings only)
   checkFieldNames(URLS.items, "Items", fieldNames(ITEMS_TABLE));
   checkFieldNames(URLS.txns, "Transactions", fieldNames(TXN_TABLE));
@@ -73,6 +77,7 @@ async function onReady({ me }) {
   $("#reload-btn").addEventListener("click", async () => {
     try {
       await loadAll();
+      S.lists = await loadLists();
       switchTab(S.tab);
       renderRequests();
       toast("Data refreshed.", "success");
