@@ -2,7 +2,7 @@
 // adjustable approved quantities.
 import { CONFIG, REQUEST_STATUS } from "../shared/config.js";
 import { applyServiceEdits } from "../shared/esri-client.js";
-import { $, esc, money, fmtDate, fmtDateTime, matchesSearch, debounce, clampInt, DAY_MS } from "../shared/util.js";
+import { $, esc, money, fmtDate, fmtDay, daysUntil, fmtDateTime, matchesSearch, debounce, clampInt, DAY_MS } from "../shared/util.js";
 import { openModal, toast } from "../shared/ui.js";
 import { S, URLS, linesFor } from "./state.js";
 import { postStockMoves } from "./stock.js";
@@ -24,7 +24,12 @@ export function renderRequests() {
 
   const rows = S.reqs
     .filter((r) => (F.status === "All" || r.status === F.status) && matchesSearch([r.request_id, r.requester_name, r.requester_email, r.section, r.region, r.request_note], F.q))
-    .sort((a, b) => (F.status === "Pending" ? (a.submitted_date || 0) - (b.submitted_date || 0) : (b.submitted_date || 0) - (a.submitted_date || 0)));
+    .sort((a, b) =>
+      F.status === "Pending"
+        ? // soonest need-by date first, requests with no date after those, then oldest first
+          (a.need_by_date || Infinity) - (b.need_by_date || Infinity) || (a.submitted_date || 0) - (b.submitted_date || 0)
+        : (b.submitted_date || 0) - (a.submitted_date || 0)
+    );
 
   $("#req-body").innerHTML =
     rows
@@ -32,6 +37,7 @@ export function renderRequests() {
         (r) => `<tr data-rid="${esc(r.request_id)}" tabindex="0">
         <td class="mono">${esc(r.request_id)}</td>
         <td>${fmtDate(r.submitted_date)}</td>
+        <td>${needByCell(r)}</td>
         <td><div class="t">${esc(r.requester_name)}</div><div class="sub">${esc(r.requester_email)}</div></td>
         <td>${esc(r.section || "—")}</td>
         <td>${esc(r.region || "—")}</td>
@@ -41,7 +47,20 @@ export function renderRequests() {
         <td class="row-actions"><button type="button" data-open>${r.status === "Pending" ? "Review" : "View"}</button></td>
       </tr>`
       )
-      .join("") || `<tr><td colspan="9" class="empty">${F.status === "Pending" ? "No pending requests." : "No requests match."}</td></tr>`;
+      .join("") || `<tr><td colspan="10" class="empty">${F.status === "Pending" ? "No pending requests." : "No requests match."}</td></tr>`;
+}
+
+/** "Nov 5, 2026" plus a flag when a still-open request is overdue or due within 3 days. */
+function needByCell(r, open = r.status === "Pending") {
+  if (!r.need_by_date) return `<span class="sub">—</span>`;
+  const d = daysUntil(r.need_by_date);
+  let flag = "";
+  if (open && d !== null) {
+    if (d < 0) flag = ` <span class="status-pill st-bad">${-d} day${d === -1 ? "" : "s"} overdue</span>`;
+    else if (d === 0) flag = ` <span class="status-pill st-bad">today</span>`;
+    else if (d <= 3) flag = ` <span class="status-pill st-pending">in ${d} day${d === 1 ? "" : "s"}</span>`;
+  }
+  return `${esc(fmtDay(r.need_by_date))}${flag}`;
 }
 
 // ───────────────────────── review dialog ─────────────────────────
@@ -73,6 +92,7 @@ export function openRequest(rid) {
       <dt>Section</dt><dd>${esc(req.section || "—")} ${req.section ? `<button type="button" class="link-btn" data-hist="section">history</button>` : ""}</dd>
       <dt>Region</dt><dd>${esc(req.region || "—")} ${req.region ? `<button type="button" class="link-btn" data-hist="region">history</button>` : ""}</dd>
       <dt>Submitted</dt><dd>${fmtDateTime(req.submitted_date)}</dd>
+      ${req.need_by_date ? `<dt>Need by</dt><dd>${needByCell(req, pending)}</dd>` : ""}
       ${req.deliver_to ? `<dt>Deliver to</dt><dd>${esc(req.deliver_to)}</dd>` : ""}
       ${req.request_note ? `<dt>Note</dt><dd>${esc(req.request_note)}</dd>` : ""}
       ${!pending ? `<dt>${esc(req.status)}</dt><dd>${fmtDateTime(req.decided_date)}${req.decided_by ? " by " + esc(req.decided_by) : ""}${req.decision_note ? `<div class="sub">${esc(req.decision_note)}</div>` : ""}</dd>` : ""}

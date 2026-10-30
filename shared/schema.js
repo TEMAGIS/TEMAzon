@@ -74,6 +74,7 @@ export const REQUESTS_TABLE = {
     str("section", 80, "Section"),
     str("region", 40, "Region"),
     str("deliver_to", 255, "Deliver to"),
+    date("need_by_date", "Need by"), // optional; stored at 12:00 UTC
     str("request_note", 1000, "Request note"),
     int("line_count", "Lines"),
     dbl("est_total", "Estimated total"),
@@ -112,6 +113,9 @@ export const LISTS_TABLE = {
     int("sort_order", "Order"),
   ],
 };
+
+/** One field spec expanded for addToDefinition (used to add a field to an existing table). */
+export const toFieldDefinition = (f) => ({ sqlType: "sqlTypeOther", nullable: true, editable: true, domain: null, defaultValue: null, ...f });
 
 /** Expands a compact table spec into the full JSON addToDefinition expects. */
 export function toTableDefinition(spec) {

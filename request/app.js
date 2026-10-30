@@ -11,7 +11,7 @@ import { CONFIG, REQUEST_STATUS } from "../shared/config.js";
 import { startSession } from "../shared/session.js";
 import { queryAll, applyEdits, applyServiceEdits, getLayerInfo, checkFieldNames, tableUrl, sqlStr } from "../shared/esri-client.js";
 import { REQUESTS_TABLE, LINES_TABLE, fieldNames } from "../shared/schema.js";
-import { $, $$, esc, safeUrl, money, fmtDate, newRequestId, matchesSearch, clampInt, debounce, unique } from "../shared/util.js";
+import { $, $$, esc, safeUrl, money, fmtDate, fmtDay, dayToMs, newRequestId, matchesSearch, clampInt, debounce, unique } from "../shared/util.js";
 import { toast, setStatus, confirmDialog } from "../shared/ui.js";
 import { loadLists } from "../shared/lists.js";
 
@@ -146,6 +146,11 @@ function renderCart() {
     (CONFIG.SHOW_PRICES_TO_EMPLOYEES ? ` · est. ${money(est)}` : "");
 }
 
+const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 async function submitRequest(ev) {
   ev.preventDefault();
   if (S.submitting) return;
@@ -157,6 +162,8 @@ async function submitRequest(ev) {
   if (!lines.length) return showFormError("Add at least one item.");
   if (!section) return showFormError("Choose your section.");
   if (!region) return showFormError("Choose your region / office.");
+  const needBy = $("#f-needby").value;
+  if (needBy && needBy < todayStr()) return showFormError("The need-by date can't be in the past.");
   for (const l of lines) {
     if (!Number.isInteger(l.qty) || l.qty < 1) return showFormError(`Enter a quantity for “${l.item.description}”.`);
   }
@@ -180,6 +187,7 @@ async function submitRequest(ev) {
       section,
       region,
       deliver_to: $("#f-deliver").value.trim(),
+      need_by_date: dayToMs(needBy),
       request_note: $("#f-note").value.trim(),
       line_count: lines.length,
       est_total: Math.round(est * 100) / 100,
@@ -202,6 +210,7 @@ async function submitRequest(ev) {
     try { localStorage.setItem("temazon_form_prefs", JSON.stringify({ section, region })); } catch {}
     S.cart.clear();
     $("#f-deliver").value = "";
+    $("#f-needby").value = "";
     $("#f-note").value = "";
     renderCatalog();
     renderCart();
@@ -289,6 +298,7 @@ async function toggleRequest(card) {
       <dl class="req-facts">
         <dt>Region</dt><dd>${esc(req.region || "—")}</dd>
         ${req.deliver_to ? `<dt>Deliver to</dt><dd>${esc(req.deliver_to)}</dd>` : ""}
+        ${req.need_by_date ? `<dt>Need by</dt><dd>${esc(fmtDay(req.need_by_date))}</dd>` : ""}
         ${req.request_note ? `<dt>Your note</dt><dd>${esc(req.request_note)}</dd>` : ""}
         ${req.decided_date ? `<dt>Decision</dt><dd>${esc(req.status)} ${fmtDate(req.decided_date)}${req.decided_by ? " by " + esc(req.decided_by) : ""}</dd>` : ""}
         ${req.decision_note ? `<dt>Property Office note</dt><dd>${esc(req.decision_note)}</dd>` : ""}
@@ -416,6 +426,7 @@ async function onReady({ me }) {
   }
   setStatus("Loading catalog…");
   wire();
+  $("#f-needby").min = todayStr();
   await loadLists(); // Section / Region choices set in the console (falls back to config.js)
   $("#f-region").innerHTML = `<option value="">Select…</option>` + CONFIG.REGIONS.map((r) => `<option>${esc(r)}</option>`).join("");
   $("#f-section").innerHTML = `<option value="">Select…</option>` + CONFIG.SECTIONS.map((r) => `<option>${esc(r)}</option>`).join("");

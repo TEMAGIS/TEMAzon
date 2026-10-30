@@ -15,6 +15,19 @@ export const money = (n) =>
 export const fmtDate = (ms) =>
   ms ? new Date(Number(ms)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—";
 
+/** A "Need by" style date: stored at 12:00 UTC so every time zone shows the same calendar day. */
+export const dayToMs = (yyyyMmDd) => (/^\d{4}-\d{2}-\d{2}$/.test(yyyyMmDd || "") ? Date.parse(`${yyyyMmDd}T12:00:00Z`) : null);
+export const fmtDay = (ms) =>
+  ms ? new Date(Number(ms)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }) : "—";
+/** Whole days from today (local calendar) to a stored day; negative = past due. */
+export const daysUntil = (ms) => {
+  if (!ms) return null;
+  const d = new Date(Number(ms));
+  const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const now = new Date();
+  return Math.round((target - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+};
+
 export const fmtDateTime = (ms) =>
   ms
     ? new Date(Number(ms)).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })

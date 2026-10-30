@@ -10,7 +10,7 @@
 
 import { CONFIG } from "./config.js";
 import { esriRequest, queryAll, tableUrl } from "./esri-client.js";
-import { LISTS_TABLE, toTableDefinition } from "./schema.js";
+import { LISTS_TABLE, REQUESTS_TABLE, toTableDefinition, toFieldDefinition } from "./schema.js";
 
 export const LIST_KEYS = { section: "SECTIONS", region: "REGIONS" };
 export const LIST_MAX = { section: 80, region: 40 };
@@ -71,4 +71,16 @@ export async function createListsTable() {
   const url = await findListsTableUrl();
   if (!url) throw new Error("The Lists table was created but couldn't be found afterwards. Reload the page.");
   return url;
+}
+
+/** Adds the "Need by" field to an existing Requests table (needs the service owner / an admin). */
+export async function addNeedByField() {
+  const svc = CONFIG.REQUESTS_SERVICE_URL;
+  const spec = REQUESTS_TABLE.fields.find((f) => f.name === "need_by_date");
+  const adminUrl = `${svc.replace(/\/+$/, "").replace("/rest/services/", "/rest/admin/services/")}/${CONFIG.REQ_TABLE_ID}`;
+  try {
+    await esriRequest(`${adminUrl}/addToDefinition`, { addToDefinition: JSON.stringify({ fields: [toFieldDefinition(spec)] }) });
+  } catch (err) {
+    throw new Error(`Couldn't add the field (${err.message}). Only the owner of the Requests service, or an organization administrator, can do this — ask them to open this Settings tab, or add a Date field named need_by_date by hand (README).`);
+  }
 }

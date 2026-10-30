@@ -42,6 +42,7 @@ async function loadAll() {
   S.txns = txns;
   S.reqs = reqs;
   S.lines = lines;
+  S.reqHasNeedBy = infos[2].fields.some((f) => f.name === "need_by_date");
   S.oid = { items: infos[0].objectIdField, txns: infos[1].objectIdField, reqs: infos[2].objectIdField, lines: infos[3].objectIdField };
   reindexItems();
   setStatus("");

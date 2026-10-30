@@ -4,7 +4,7 @@
 // ledger rows keep the text they were saved with.
 import { CONFIG } from "../shared/config.js";
 import { applyEdits } from "../shared/esri-client.js";
-import { LIST_KEYS, LIST_MAX, defaultValues, loadLists, createListsTable } from "../shared/lists.js";
+import { LIST_KEYS, LIST_MAX, defaultValues, loadLists, createListsTable, addNeedByField } from "../shared/lists.js";
 import { $, esc } from "../shared/util.js";
 import { toast, confirmDialog } from "../shared/ui.js";
 import { S } from "./state.js";
@@ -65,7 +65,13 @@ export function renderSettings() {
   const note = L.url && unsaved.length
     ? `<div class="banner banner-info">Showing the built-in defaults for ${unsaved.join(" and ")}. Click Save to store them; after that, edits here control the request form.</div>`
     : "";
-  host.innerHTML = `${banner}${note}
+  const needBy = S.reqHasNeedBy === false
+    ? `<div class="banner banner-warn" style="display:block">
+        <b>One-time setup:</b> the Requests table doesn't have a <b>Need by</b> field yet, so the date employees pick on the request form isn't being saved.
+        <div style="margin-top:.5rem"><button type="button" class="btn-primary" id="set-addneedby">Add the Need by field</button>
+        <span class="sub"> Needs the owner of the Requests service or an ArcGIS administrator.</span></div></div>`
+    : "";
+  host.innerHTML = `${needBy}${banner}${note}
     <p class="sub set-intro">Changes apply to the request form the next time someone opens it. Removing or renaming a value doesn't change past requests or the ledger — they keep the text they were saved with.</p>
     <div class="set-grid">${listHtml("section")}${listHtml("region")}</div>`;
 }
@@ -125,6 +131,19 @@ export function initSettings() {
         ["section", "region"].forEach(resetDraft);
         renderSettings();
         toast("Lists table created. Click Save on each list to store it.", "success", 6000);
+      } catch (err) {
+        e.target.disabled = false;
+        toast(err.message, "error", 9000);
+      }
+      return;
+    }
+    if (e.target.id === "set-addneedby") {
+      try {
+        e.target.disabled = true;
+        await addNeedByField();
+        S.reqHasNeedBy = true;
+        renderSettings();
+        toast("Need by field added. New requests will now save the date.", "success", 6000);
       } catch (err) {
         e.target.disabled = false;
         toast(err.message, "error", 9000);
