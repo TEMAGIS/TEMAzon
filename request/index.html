@@ -38,6 +38,7 @@
     </div>
     <nav class="topbar-tabs" id="tabs" hidden>
       <button type="button" class="tab-btn active" data-tab="new">New request</button>
+      <button type="button" class="tab-btn" data-tab="custom">Not on the list</button>
       <button type="button" class="tab-btn" data-tab="mine">My requests <span id="mine-badge" class="badge" hidden></span></button>
     </nav>
     <div class="topbar-right">
@@ -85,6 +86,36 @@
         <button type="submit" id="submit-btn" class="btn-primary btn-block">Submit request</button>
       </form>
     </aside>
+  </main>
+
+  <!-- CUSTOM REQUEST (something not in the catalog) -->
+  <main id="screen-custom" class="mine-layout" hidden>
+    <form id="custom-form" class="cart-form" novalidate style="max-width:640px;margin:0 auto">
+      <h2>Request something that isn't on the list</h2>
+      <p class="hint">Describe what you need. The Property Office will review it like any other request.</p>
+      <label>What do you need?
+        <textarea id="c-what" rows="4" maxlength="800" required placeholder="Item, quantity, and any details — size, model, color, or a link to an example"></textarea>
+      </label>
+      <label>Why do you need it? <span class="hint">(optional)</span>
+        <textarea id="c-why" rows="2" maxlength="150"></textarea>
+      </label>
+      <div class="two-col">
+        <label>Section
+          <select id="c-section" required></select>
+        </label>
+        <label>Region / office
+          <select id="c-region" required></select>
+        </label>
+      </div>
+      <label>Deliver to <span class="hint">(room, building or person — optional)</span>
+        <input id="c-deliver" type="text" maxlength="250" />
+      </label>
+      <label>Need by <span class="hint">(optional)</span>
+        <input id="c-needby" type="date" />
+      </label>
+      <div id="custom-error" class="form-error" role="alert" hidden></div>
+      <button type="submit" id="custom-submit" class="btn-primary btn-block">Submit request</button>
+    </form>
   </main>
 
   <!-- MY REQUESTS -->

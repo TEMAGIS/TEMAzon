@@ -225,6 +225,73 @@ async function submitRequest(ev) {
     btn.textContent = "Submit request";
   }
 }
+// A "not on the list" request is saved as a normal request with ONE line whose item_id is
+// CUSTOM, so the console, My requests and the notification email all work unchanged.
+async function submitCustom(ev) {
+  ev.preventDefault();
+  if (S.submitting) return;
+  const err = $("#custom-error");
+  const fail = (m) => { err.textContent = m; err.hidden = false; };
+  err.hidden = true;
+  const what = $("#c-what").value.trim();
+  const why = $("#c-why").value.trim();
+  const section = $("#c-section").value;
+  const region = $("#c-region").value;
+  const needBy = $("#c-needby").value;
+  if (!what) return fail("Describe what you need.");
+  if (!section) return fail("Choose your section.");
+  if (!region) return fail("Choose your region / office.");
+  if (needBy && needBy < todayStr()) return fail("The need-by date can't be in the past.");
+  S.submitting = true;
+  const btn = $("#custom-submit");
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+  try {
+    const id = newRequestId();
+    const me = S.me;
+    const req = {
+      request_id: id,
+      status: REQUEST_STATUS.PENDING,
+      submitted_date: Date.now(),
+      requester_name: me.name,
+      requester_email: (me.email || "").toLowerCase(),
+      requester_edison_id: "",
+      section,
+      region,
+      deliver_to: $("#c-deliver").value.trim(),
+      need_by_date: dayToMs(needBy),
+      request_note: why ? `${what}\n\nWhy: ${why}` : what,
+      line_count: 1,
+      est_total: 0,
+    };
+    const line = {
+      request_id: id,
+      line_no: 1,
+      item_id: "CUSTOM",
+      category: "Custom request",
+      description: ("Custom request: " + what.replace(/\s+/g, " ")).slice(0, 255),
+      unit_cost: null,
+      qty_requested: 1,
+      line_note: "",
+    };
+    await applyServiceEdits(CONFIG.REQUESTS_SERVICE_URL, [
+      { id: CONFIG.REQ_TABLE_ID, adds: [{ attributes: req }] },
+      { id: CONFIG.LINES_TABLE_ID, adds: [{ attributes: line }] },
+    ]);
+    try { localStorage.setItem("temazon_form_prefs", JSON.stringify({ section, region })); } catch {}
+    ["#c-what", "#c-why", "#c-deliver", "#c-needby"].forEach((s) => ($(s).value = ""));
+    toast(`Request ${id} submitted.`, "success");
+    switchTab("mine");
+  } catch (e) {
+    console.error(e);
+    fail(`Could not submit: ${e.message}`);
+  } finally {
+    S.submitting = false;
+    btn.disabled = false;
+    btn.textContent = "Submit request";
+  }
+}
+
 function showFormError(msg) {
   const el = $("#form-error");
   el.textContent = msg;
@@ -284,8 +351,9 @@ async function toggleRequest(card) {
   try {
     const lines = await queryAll(LINES_URL, { where: `request_id = ${sqlStr(rid)}`, orderByFields: "line_no" });
     const fulfilled = req.status === REQUEST_STATUS.FULFILLED;
+    const isCustom = lines.some((l) => l.item_id === "CUSTOM");
     body.innerHTML = `
-      <table class="mini-table">
+      ${isCustom ? "" : `<table class="mini-table">
         <thead><tr><th>Item</th><th class="num">Requested</th>${fulfilled || req.status === REQUEST_STATUS.DENIED ? `<th class="num">Approved</th>` : ""}</tr></thead>
         <tbody>${lines
           .map(
@@ -294,17 +362,17 @@ async function toggleRequest(card) {
               ${fulfilled ? `<td class="num ${l.qty_approved !== l.qty_requested ? "changed" : ""}">${l.qty_approved ?? 0}</td>` : req.status === REQUEST_STATUS.DENIED ? `<td class="num">0</td>` : ""}</tr>`
           )
           .join("")}</tbody>
-      </table>
+      </table>`}
       <dl class="req-facts">
         <dt>Region</dt><dd>${esc(req.region || "—")}</dd>
         ${req.deliver_to ? `<dt>Deliver to</dt><dd>${esc(req.deliver_to)}</dd>` : ""}
         ${req.need_by_date ? `<dt>Need by</dt><dd>${esc(fmtDay(req.need_by_date))}</dd>` : ""}
-        ${req.request_note ? `<dt>Your note</dt><dd>${esc(req.request_note)}</dd>` : ""}
+        ${req.request_note ? `<dt>${isCustom ? "Your request" : "Your note"}</dt><dd>${esc(req.request_note)}</dd>` : ""}
         ${req.decided_date ? `<dt>Decision</dt><dd>${esc(req.status)} ${fmtDate(req.decided_date)}${req.decided_by ? " by " + esc(req.decided_by) : ""}</dd>` : ""}
         ${req.decision_note ? `<dt>Property Office note</dt><dd>${esc(req.decision_note)}</dd>` : ""}
       </dl>
       <div class="req-actions">
-        <button type="button" data-again>Request these items again</button>
+        ${isCustom ? "" : `<button type="button" data-again>Request these items again</button>`}
         ${req.status === REQUEST_STATUS.PENDING ? `<button type="button" class="btn-danger" data-cancel>Cancel request</button>` : ""}
       </div>`;
     body.dataset.loaded = "1";
@@ -353,6 +421,7 @@ function switchTab(tab) {
   S.tab = tab;
   $$("#tabs .tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   $("#screen-new").hidden = tab !== "new";
+  $("#screen-custom").hidden = tab !== "custom";
   $("#screen-mine").hidden = tab !== "mine";
   if (tab === "mine") loadMine().catch((e) => toast(`Could not load your requests: ${e.message}`, "error"));
 }
@@ -402,6 +471,7 @@ function wire() {
     }
   });
   $("#request-form").addEventListener("submit", submitRequest);
+  $("#custom-form").addEventListener("submit", submitCustom);
 
   $("#mine-list").addEventListener("click", (e) => {
     const card = e.target.closest(".req-card");
@@ -427,13 +497,16 @@ async function onReady({ me }) {
   setStatus("Loading catalog…");
   wire();
   $("#f-needby").min = todayStr();
+  $("#c-needby").min = todayStr();
   await loadLists(); // Section / Region choices set in the console (falls back to config.js)
   $("#f-region").innerHTML = `<option value="">Select…</option>` + CONFIG.REGIONS.map((r) => `<option>${esc(r)}</option>`).join("");
   $("#f-section").innerHTML = `<option value="">Select…</option>` + CONFIG.SECTIONS.map((r) => `<option>${esc(r)}</option>`).join("");
+  $("#c-region").innerHTML = $("#f-region").innerHTML;
+  $("#c-section").innerHTML = $("#f-section").innerHTML;
   try {
     const prefs = JSON.parse(localStorage.getItem("temazon_form_prefs") || "{}");
-    if (CONFIG.SECTIONS.includes(prefs.section)) $("#f-section").value = prefs.section;
-    if (CONFIG.REGIONS.includes(prefs.region)) $("#f-region").value = prefs.region;
+    if (CONFIG.SECTIONS.includes(prefs.section)) $("#f-section").value = $("#c-section").value = prefs.section;
+    if (CONFIG.REGIONS.includes(prefs.region)) $("#f-region").value = $("#c-region").value = prefs.region;
   } catch {}
 
   const [rows, reqInfo] = await Promise.all([

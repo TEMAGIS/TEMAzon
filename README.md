@@ -206,3 +206,15 @@ The Section and Region dropdowns on the request form are edited in the console's
 * Until a list is saved, the form uses `SECTIONS` / `REGIONS` in `config.js` as defaults, so nothing breaks if the table is missing or can't be read.
 * Removing or renaming a value only affects new requests; existing requests and ledger rows keep the text they were saved with, so a renamed section shows as a separate group in burn-rate comparisons. Settings shows how many requests use each value.
 * The Lists table shares the Requests service's sharing, so employees technically have edit rights to it. The console is the supported way to change it. For a hard lock, share a read-only view of the table with employees instead.
+
+### Need by date
+The request form has an optional **Need by** date (it can't be in the past). The console shows it as a **Need by** column on the Requests tab, sorts Pending requests with the soonest date first, flags requests due within 3 days or overdue, and shows the date in the review dialog. The new-request email to officers includes it too (redeploy `temazon_notify_lambda.py`).
+
+* **Existing install:** the Requests table needs a Date field named `need_by_date`. Open console → Settings and click **Add the Need by field** (service owner or ArcGIS admin), or add the field by hand. Until it exists, the date isn't saved. New installs get it from the Setup page.
+* Dates are stored at 12:00 UTC so every time zone shows the same calendar day.
+
+## Requests for things not on the list
+
+The request form has a **Not on the list** tab where employees describe what they need in a text box (what, why, section, region, deliver to, need by). No schema change or setup is needed.
+
+It is saved as a normal request with a single line whose Item ID is `CUSTOM` (the details are in the request note), so it appears in the console queue, My requests, and the notification email like any other request. In the console review window the line shows "Not in inventory"; the button reads **Approve** and moves no stock. Use the decision note to tell the requester what happens next (for example, "ordered, expect 2 weeks").

@@ -133,6 +133,7 @@ export function openRequest(rid) {
     if (basisNote) basisNote.textContent = burn ? "" : `This request has no ${st.basis} on it, so there's nothing to compare against.`;
     $("#rv-body", dlg.el).innerHTML = lines
       .map((l) => {
+        const custom = l.item_id === "CUSTOM";
         const item = S.itemsById.get(l.item_id);
         const onHand = item ? Number(item.qty_on_hand) || 0 : null;
         const appr = st.approve.get(l.line_no) ?? 0;
@@ -155,8 +156,8 @@ export function openRequest(rid) {
           }
         }
         return `<tr data-line="${l.line_no}" class="${short ? "row-short" : ""}">
-          <td><div class="t">${esc(l.description)}</div><div class="sub">${esc(l.item_id)}${l.line_note ? ` · they wrote: “${esc(l.line_note)}”` : ""}${item ? "" : " · <b>item no longer exists</b>"}</div></td>
-          <td class="num ${short ? "stock-out" : ""}">${onHand ?? "?"}</td>
+          <td><div class="t">${esc(l.description)}</div><div class="sub">${custom ? "Not in inventory — see the request note above" : esc(l.item_id)}${l.line_note ? ` · they wrote: “${esc(l.line_note)}”` : ""}${item || custom ? "" : " · <b>item no longer exists</b>"}</div></td>
+          <td class="num ${short ? "stock-out" : ""}">${custom ? "—" : onHand ?? "?"}</td>
           <td class="num">${l.qty_requested}</td>
           <td class="num">${pending ? `<input type="number" class="appr-input" min="0" step="1" value="${appr}" data-appr aria-label="Approved quantity for ${esc(l.description)}" ${alreadyIssued ? "readonly" : ""} />` : `<span class="${(l.qty_approved ?? 0) !== l.qty_requested ? "changed" : ""}">${l.qty_approved ?? 0}</span>`}</td>
           ${pending ? `<td>${usage}</td><td>${peer}</td><td>${supply}</td>` : ""}
@@ -212,14 +213,14 @@ export function openRequest(rid) {
       },
     });
     buttons.push({
-      label: alreadyIssued ? "Finish without issuing again" : "Approve & issue stock",
+      label: alreadyIssued ? "Finish without issuing again" : lines.every((l) => l.item_id === "CUSTOM") ? "Approve" : "Approve & issue stock",
       kind: "primary",
       action: async (api) => {
         const note = $("#rv-note", api.el).value.trim();
         const approved = lines.map((l) => ({ l, q: clampInt(st.approve.get(l.line_no) || 0, 0, 1e9) }));
         if (!alreadyIssued) {
           const moves = approved
-            .filter((a) => a.q > 0)
+            .filter((a) => a.q > 0 && a.l.item_id !== "CUSTOM") // custom requests move no stock
             .map((a) => {
               const item = S.itemsById.get(a.l.item_id);
               if (!item) throw new Error(`“${a.l.description}” no longer exists — set its approved quantity to 0.`);
@@ -232,8 +233,8 @@ export function openRequest(rid) {
                 entity: { name: req.requester_name, email: req.requester_email, section: req.section, region: req.region },
               };
             });
-          if (!moves.length) throw new Error("Every approved quantity is 0 — use “Deny request” instead.");
-          await postStockMoves(moves, { allowNegative: $("#rv-neg", api.el).checked });
+          if (!approved.some((a) => a.q > 0)) throw new Error("Every approved quantity is 0 — use “Deny request” instead.");
+          if (moves.length) await postStockMoves(moves, { allowNegative: $("#rv-neg", api.el).checked });
         }
         try {
           await finalize(REQUEST_STATUS.FULFILLED, note);
