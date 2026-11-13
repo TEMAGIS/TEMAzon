@@ -40,17 +40,21 @@ async function sha256base64url(s) {
   return base64url(new Uint8Array(hash));
 }
 
-// --- Token cache (localStorage) ---
+// --- Token cache (sessionStorage, per tab) ---
 function loadStoredToken() {
   try {
-    const raw = localStorage.getItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
+    // Sign-in tokens live in per-tab sessionStorage: every TEMAGIS app shares the
+    // temagis.github.io origin, so localStorage would expose them to all of them.
+    // Delete any token an older version of this app left in localStorage.
+    try { localStorage.removeItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY); } catch { /* storage unavailable */ }
+    const raw = sessionStorage.getItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
     if (!raw) return null;
     const t = JSON.parse(raw);
     if (!t.accessToken || !t.expiresAt) return null;
     // A token issued to a different OAuth app can't be refreshed with this app's
     // client ID ("Invalid client_id"), so ignore it and make the person sign in again.
     if (t.clientId !== CONFIG.ARCGIS_APP_ID) {
-      localStorage.removeItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
+      sessionStorage.removeItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
       return null;
     }
     return t;
@@ -61,7 +65,7 @@ function loadStoredToken() {
 function saveToken(t) {
   TOKEN = t;
   try {
-    localStorage.setItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY, JSON.stringify(t));
+    sessionStorage.setItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY, JSON.stringify(t));
   } catch {
     /* storage blocked: token stays in memory for this page only */
   }
@@ -69,7 +73,7 @@ function saveToken(t) {
 function clearStoredToken() {
   TOKEN = null;
   try {
-    localStorage.removeItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
+    sessionStorage.removeItem(CONFIG.ARCGIS_TOKEN_STORAGE_KEY);
     sessionStorage.removeItem("temazon_oauth_verifier");
     sessionStorage.removeItem("temazon_oauth_state");
   } catch {
